@@ -4,3 +4,14 @@ namespace: praxis-prod
 resources:
   - ../../base
   - secrets.yaml
+  - route.yaml
+images:
+  - name: ghcr.io/alexandertemp/praxis-backend
+    newTag: sha-46e47c5          # ← la versión de prod; CI cambiará esta línea en el paso 10
+configMapGenerator:
+  - name: praxis-config
+    literals:
+      - PUBLIC_BASE_URL=https://api.169-58-93-167.sslip.io
+      - AI_FEEDBACK_BASE_URL=https://api.groq.com/openai/v1
+      - AI_FEEDBACK_MODEL=openai/gpt-oss-120b
+      - SESSION_DAYS=30
