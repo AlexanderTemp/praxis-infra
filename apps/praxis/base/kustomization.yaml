@@ -4,3 +4,4 @@ resources:
   - postgres.yaml
   - minio.yaml
   - api.yaml
+  - backup.yaml

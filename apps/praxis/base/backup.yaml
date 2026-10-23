@@ -1,0 +1,64 @@
+# Nightly pg_dump to its own disk, keeping the last 7 days.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backups
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+spec:
+  schedule: "0 3 * * *"
+  timeZone: America/La_Paz
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70          # postgres user in the alpine image
+            runAsGroup: 70
+          containers:
+            - name: pg-dump
+              image: postgres:17.6-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: praxis-secrets
+                      key: DB_PASSWORD
+              command:
+                - sh
+                - -c
+                - |
+                  set -eo pipefail
+                  f=/backups/praxis-$(date +%F-%H%M).sql.gz
+                  pg_dump -h postgres -U praxis -d praxis --no-owner --no-privileges | gzip > "$f.tmp"
+                  mv "$f.tmp" "$f"
+                  find /backups -name 'praxis-*.sql.gz' -mtime +7 -delete
+                  ls -lh /backups
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits:   { memory: 256Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: backups
