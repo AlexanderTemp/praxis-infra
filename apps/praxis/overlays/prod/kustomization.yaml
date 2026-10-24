@@ -7,7 +7,7 @@ resources:
   - route.yaml
 images:
   - name: ghcr.io/alexandertemp/praxis-backend
-    newTag: sha-46e47c5          # ← la versión de prod; CI cambiará esta línea en el paso 10
+    newTag: sha-ecd9f41
 configMapGenerator:
   - name: praxis-config
     literals:
