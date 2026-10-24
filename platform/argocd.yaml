@@ -1,0 +1,26 @@
+# TLS termina en el Gateway: argocd-server sirve HTTP plano detrás de él.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  server.insecure: "true"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: public
+      namespace: nginx-gateway
+  hostnames: ["argocd.169-58-93-167.sslip.io"]
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80
